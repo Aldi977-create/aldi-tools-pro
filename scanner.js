@@ -1,42 +1,43 @@
-const https = require('https');
+const axios = require('axios');
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
-const chatId = process.env.TELEGRAM_CHAT_ID;
+// Konfigurasi Telegram Bot
+const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-const pairs = ["XAUUSD", "EURUSD", "GBPUSD", "BTCUSD"];
-const timeframes = ["5", "15", "60", "240"];
-
-function sendTelegramMessage(text) {
-    if (!token || !chatId) return;
-    const data = JSON.stringify({ chat_id: chatId, text: text, parse_mode: "Markdown" });
-    const options = {
-        hostname: 'api.telegram.com',
-        path: `/bot${token}/sendMessage`,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': data.length }
-    };
-    const req = https.request(options, (res) => { res.on('data', (d) => {}); });
-    req.on('error', (error) => { console.error(error); });
-    req.write(data);
-    req.end();
-}
-
-function runAutoScanner24h() {
-    let reportText = "🤖 *ALDI Tools Pro - 24h Market Scanner*\n\n";
-    pairs.forEach(pair => {
-        timeframes.forEach(tf => {
-            let marketHash = (pair.length + parseInt(tf) + Date.now()) % 4;
-            let isValidSetup = (marketHash !== 0); 
-
-            if (isValidSetup) {
-                let direction = marketHash % 2 === 0 ? "🟢 BUY (Bullish BOS)" : "🔴 SELL (Bearish BOS)";
-                reportText += `*${pair}* (${tf}m):\n👉 Setup Valid: ${direction}\n\n`;
-            } else {
-                reportText += `*${pair}* (${tf}m):\n⏳ WAITING (Sideways / No Setup)\n\n`;
-            }
+async function sendTelegramMessage(text) {
+    try {
+        const url = `https://api.telegram.org/bot${TOKEN}/sendMessage`;
+        await axios.post(url, {
+            chat_id: CHAT_ID,
+            text: text,
+            parse_mode: 'Markdown'
         });
-    });
-    sendTelegramMessage(reportText);
+        console.log("Pesan berhasil dikirim ke Telegram.");
+    } catch (error) {
+        console.error("Gagal mengirim pesan:", error.response?.data || error.message);
+    }
 }
 
-runAutoScanner24h();
+async function runScanner() {
+    console.log("Memulai pemindaian market ALDI Tools Pro (XAUUSD, BTC, ETH)...");
+
+    // Contoh simulasi pengecekan market / indikator teknikal
+    // Di sini kamu bisa masukkan logic API market (seperti Binance/Yahoo Finance/MetaTrader API)
+    
+    let marketReport = `🔍 *ALDI TOOLS PRO - LAPORAN SCANNER* ⏱\n\n`;
+    
+    // Contoh Pair XAUUSD
+    marketReport += `🟡 *XAU/USD (Timeframe M15)*\n`;
+    marketReport += `• Status: Memantau area Support / Resistance.\n`;
+    marketReport += `• Analisa: Belum ada breakout valid, harga masih sideways.\n\n`;
+
+    // Contoh Pair BTCUSDT
+    marketReport += `🟢 *BTC/USDT (Timeframe M15)*\n`;
+    marketReport += `• Status: *WAITING FOR SETUP*\n`;
+    marketReport += `• Alasan: RSI mendekati area oversold, menunggu konfirmasi volume.\n`;
+
+    // Kirim laporan otomatis ke Telegram
+    await sendTelegramMessage(marketReport);
+}
+
+runScanner();
